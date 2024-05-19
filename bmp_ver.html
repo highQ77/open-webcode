@@ -1,0 +1,214 @@
+<!-- design by William77 -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Open-WebCode</title>
+    <style>
+        h1,
+        h3 {
+            margin: 0;
+            padding: 0;
+            color: #222;
+        }
+
+        h1 {
+            color: #CCC;
+        }
+
+        button {
+            margin-top: 12px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #333;
+        }
+
+        button {
+            border: 1px solid white;
+            padding: 4px;
+            background-color: transparent;
+            color: #FFF;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: yellowgreen;
+        }
+    </style>
+</head>
+
+<body style="font-family: Arial; background-color: #5c882f;">
+    <h1 style="padding: 10px;">Open-WebCode v0.7
+    </h1>
+    <div style="padding: 0px 10px; margin-bottom: 56px;">design by william77</div>
+    <div style="padding: 10px; margin: 16px 0px;">
+        <div style="color: #AAA;">專案位址 <a href="https://github.com/highQ77/open-webcode" target="_blank"
+                style="color:white;">點此</a></div>
+    </div>
+    <hr>
+    <h3 style="padding: 10px; color: #CCC;">簡單強悍易用，可將任意檔案轉換成 .bmp 來儲存-資料變成唯讀，檔案格式可以是 html, css, javascript, 任意文本格式,
+        圖片資源, 聲音等等</h3>
+
+    <div style="padding: 10px; margin: 12px 12px; border-left: 3px solid yellowgreen;">
+        <h3>Convert Any File to Open-WebCode</h3>
+        <div style="color: #FFF;">轉換任意檔案成 webcode .bmp 格式</div>
+        <input id="upload" type="file" style="display: none;" />
+        <button id="uploadTrigger">Convert</button>
+    </div>
+    <div style="padding: 10px; margin: 16px 12px; border-left: 3px solid yellowgreen;">
+        <h3>Load Open-WebCode .bmp File</h3>
+        <div style="color: #FFF;">讀取 webcode .bmp 格式</div>
+        <input id="uploadWC" type="file" style="display: none;" />
+        <button id="uploadWCTrigger">Load WebCode</button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <script>
+        async function encode(data, filename) {
+            let code = LZString.compressToBase64(data)
+            code = code.split('').map(c => c.charCodeAt(0))
+            const w = Math.ceil(Math.sqrt(code.length / 3))
+            return createBMP(code, w, w)
+        }
+
+        function decode(webcode) {
+            return new Promise(resolve => {
+                var fr = new FileReader();
+                fr.onload = function (e) {
+                    let img = document.createElement('img')
+                    img.onload = () => {
+                        let w = img.naturalWidth
+                        let h = img.naturalHeight
+                        const canvas = document.createElement('canvas')
+                        const ctx = canvas.getContext('2d')
+                        canvas.width = w;
+                        canvas.height = h;
+                        ctx.drawImage(img, 0, 0)
+
+                        let i = 0;
+                        let recover = []
+                        let bpp = 24
+                        let rowSize = Math.floor((bpp * w + 31) / 32) * 4;
+                        for (let y = h - 1; y >= 0; y--) {
+                            for (let x = 0; x < w; x++) {
+                                const rgb = ctx.getImageData(x, y, 1, 1).data
+                                recover.push(...rgb)
+                                i += 3;
+                            }
+                            i = 100 * (h - y);
+                        }
+                        const recoverData = recover
+                            .filter(i => i != 255)
+                            .filter(i => i != 0)
+                            .map(item => String.fromCharCode(item)).join('')
+                        resolve(LZString.decompressFromBase64(recoverData))
+                    }
+                    img.src = e.target.result
+                };
+                fr.readAsDataURL(new Blob([webcode]));
+            })
+        }
+
+        function createBMP(colors, width = 200, height = 200, bpp = 24) {
+
+            // https://en.wikipedia.org/wiki/BMP_file_format
+            // Each row in the Pixel array is padded to a multiple of 4 bytes in size
+            let rowSize = Math.floor((bpp * width + 31) / 32) * 4;
+            let pixelArraySize = rowSize * height;
+
+            let BMP = new DataView(new ArrayBuffer(54));
+
+            // Bitmap file header
+            'BM'.split('').map((v, i) => {
+                BMP.setUint8(i, v.charCodeAt(0));
+            });
+            BMP.setUint32(2, pixelArraySize + 54, true);   // File size (bytes): pixel array size + headers (=54 bytes)
+            BMP.setUint16(6, 0, true);                     // Reserved
+            BMP.setUint16(8, 0, true);                     // Reserved
+            BMP.setUint32(10, 54, true);                    // Pixel array offset (=54 bytes)
+
+            // DIB header, Windows BITMAPINFOHEADER
+            BMP.setUint32(14, 40, true);                    // DIB header size (=40 bytes)
+            BMP.setUint32(18, width, true);                 // Width in pixels
+            BMP.setUint32(22, height, true);                // Height in pixels
+            BMP.setUint16(26, 1, true);                     // Number of color planes (1)
+            BMP.setUint16(28, bpp, true);                   // Bits per pixel
+            BMP.setUint32(30, 0, true);                     // No compression (0)
+            BMP.setUint32(34, pixelArraySize, true);        // Size of the raw bitmap data (bytes) including rows padding
+            BMP.setUint32(38, 2835, true);                  // Horizontal resolution (pixels per metre, signed integer), 2835 dpm = 72 dpi
+            BMP.setUint32(42, 2835, true);                  // Vertical resolution, 2835 dpm = 72 dpi
+            BMP.setUint32(46, 0, true);                     // Number of colors in the palette (keep 0 for default 2^bpp)
+            BMP.setUint32(50, 0, true);                     // Important colors (0 = every color is important)
+
+            let bmpData = new DataView(new ArrayBuffer(pixelArraySize));
+
+            // Offset of a pixel value
+            let i = 0;
+            let byesPerPixel = (bpp / 8) | 0;
+
+            // From bottom row to the top
+            for (let y = height - 1; y >= 0; y--) {
+                for (let x = 0; x < width; x++) {
+                    bmpData.setUint8(i + 2, colors.shift()); // R
+                    bmpData.setUint8(i + 1, colors.shift()); // G
+                    bmpData.setUint8(i, colors.shift()); // B
+                    i += byesPerPixel;
+                }
+                i = rowSize * (height - y);
+            }
+
+            let buffer = appendBuffer(BMP.buffer, bmpData.buffer)
+            let dataView = new DataView(buffer);
+            let blob = new Blob([dataView], { type: "application/octet-stream" });
+            return blob
+
+            function appendBuffer(buffer1, buffer2) {
+                var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+                tmp.set(new Uint8Array(buffer1), 0);
+                tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+                return tmp.buffer;
+            };
+        }
+
+
+        $(() => {
+            $('#uploadTrigger').click(() => $('#upload').click())
+            $('#upload').on('change', function (e) {
+                const f = e.target.files[0]
+                var fr = new FileReader()
+                fr.onload = async () => {
+                    $(e.target).val('')
+                    let filename = prompt('name your file') || 'Open WebCode'
+                    let fileBlob = await encode(fr.result, filename)
+                    const link = document.createElement('a');
+                    link.setAttribute('href', URL.createObjectURL(fileBlob));
+                    link.setAttribute('download', 'webcode-' + filename + '.bmp');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+                fr.readAsText(f);
+            })
+
+            $('#uploadWCTrigger').click(() => $('#uploadWC').click())
+            $('#uploadWC').on('change', function (e) {
+                const f = e.target.files[0]
+                var fr = new FileReader()
+                fr.onload = async () => {
+                    $(e.target).val('')
+                    const d = await decode(fr.result)
+                    const win = window.open('', '_blank')
+                    win.document.write(d)
+                };
+                fr.readAsText(f);
+            })
+        })
+    </script>
+</body>
+
+</html>
