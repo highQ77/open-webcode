@@ -14,11 +14,7 @@
         }
 
         h1 {
-            color: #CCC;
-        }
-
-        button {
-            margin-top: 12px;
+            color: #ffffff;
         }
 
         hr {
@@ -27,6 +23,7 @@
         }
 
         button {
+            margin-top: 12px;
             border: 1px solid white;
             padding: 4px;
             background-color: transparent;
@@ -37,19 +34,39 @@
         button:hover {
             background-color: yellowgreen;
         }
+
+        .gradient-background {
+            background: linear-gradient(47deg, #2c5b2a, #28c330, #c4ab9a);
+            background-size: 180% 180%;
+            animation: gradient-animation 5s ease infinite;
+        }
+
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
     </style>
 </head>
 
-<body style="font-family: Arial; background-color: #5c882f;">
-    <h1 style="padding: 10px;">Open-WebCode v0.77
+<body style="font-family: Arial; height:100vh" class="gradient-background">
+    <h1 style="padding: 10px;">Open-WebCode v0.79
     </h1>
     <div style="padding: 0px 10px; margin-bottom: 56px;">design by william77</div>
     <div style="padding: 10px; margin: 16px 0px;">
-        <div style="color: #AAA;">專案位址 <a href="https://github.com/highQ77/open-webcode" target="_blank"
+        <div style="color: #000;">專案位址 <a href="https://github.com/highQ77/open-webcode" target="_blank"
                 style="color:white;">點此</a></div>
     </div>
     <hr>
-    <h3 style="padding: 10px; color: #CCC;">簡單強悍易用，可將任意檔案轉換成 .svg 來儲存-資料變成唯讀，檔案格式可以是 html, css, javascript, 任意文本格式,
+    <h3 style="padding: 10px; color: #FFF;">簡單強悍易用，可將任意檔案轉換成 .svg 來儲存-資料變成唯讀，檔案格式可以是 html, css, javascript, 任意文本格式,
         圖片資源, 聲音等等</h3>
 
     <div style="padding: 10px; margin: 12px 12px; border-left: 3px solid yellowgreen;">
